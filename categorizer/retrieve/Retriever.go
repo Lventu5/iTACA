@@ -10,6 +10,6 @@ type Retriever interface {
 }
 
 type Result struct {
-	Stream  []byte
+	Stream  string
 	SrcPort uint16
 }

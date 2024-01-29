@@ -87,7 +87,7 @@ func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) 
 					os.Exit(1)
 				}
 
-				results <- Result{Stream: resBody, SrcPort: port}
+				results <- Result{Stream: string(resBody), SrcPort: port}
 			}
 		}
 	}

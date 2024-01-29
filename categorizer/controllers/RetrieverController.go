@@ -12,8 +12,8 @@ type RetrieverController struct {
 	retriever retrieve.Retriever
 }
 
-func NewRetrieverController(queue chan<- retrieve.Result, retriever retrieve.Retriever) *RetrieverController {
-	return &RetrieverController{ctx: context.Background(), queue: queue, retriever: retriever}
+func NewRetrieverController(ctx context.Context, queue chan<- retrieve.Result, retriever retrieve.Retriever) *RetrieverController {
+	return &RetrieverController{ctx: ctx, queue: queue, retriever: retriever}
 }
 
 func (c *RetrieverController) Start(exit <-chan bool) {
@@ -22,6 +22,9 @@ func (c *RetrieverController) Start(exit <-chan bool) {
 	case <-exit:
 		fmt.Println("RetrieverController: task stopped")
 		c.ctx.Done()
+		return
+	case <-c.ctx.Done():
+		fmt.Println("RetrieverController: task stopped")
 		return
 	}
 }

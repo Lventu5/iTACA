@@ -4,4 +4,4 @@ go 1.21
 
 require go.mongodb.org/mongo-driver v1.12.1
 
-require github.com/amikos-tech/chroma-go v0.0.0-20230901221218-d0087270239e // indirect
+require github.com/amikos-tech/chroma-go v0.0.0-20240109142503-c8fb49c3e28c // indirect

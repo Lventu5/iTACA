@@ -1,5 +1,7 @@
 github.com/amikos-tech/chroma-go v0.0.0-20230901221218-d0087270239e h1:RYla80qSHCeP8WL9Hyjfuk9n/KkDcYwzfaYbfc4cqRQ=
 github.com/amikos-tech/chroma-go v0.0.0-20230901221218-d0087270239e/go.mod h1:bPy9xmWK59Ix/nteEqIvPfAI0L07di+uZMb+RiYbles=
+github.com/amikos-tech/chroma-go v0.0.0-20240109142503-c8fb49c3e28c h1:DzSXJSUVK5ed+HhAnGA1TKgBdXqAW/iXPRvpd9rXWLc=
+github.com/amikos-tech/chroma-go v0.0.0-20240109142503-c8fb49c3e28c/go.mod h1:uJwgGN4rBUTMI88Rn68Xia+cTRogOo0/elcPvJYFtBU=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/golang/snappy v0.0.1/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
