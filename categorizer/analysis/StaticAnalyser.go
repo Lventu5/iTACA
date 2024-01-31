@@ -4,7 +4,6 @@ import (
 	"categorizer/retrieve"
 	"context"
 	"errors"
-	"fmt"
 	chroma "github.com/amikos-tech/chroma-go"
 	hf "github.com/amikos-tech/chroma-go/hf"
 	"os"
@@ -12,11 +11,11 @@ import (
 
 // StaticAnalyser : interface, defines the general method "analyse" which is used to analyse a tcp stream
 type StaticAnalyser interface {
-	Analyse(ctx context.Context, queue <-chan retrieve.Result, result chan<- StaticAnalysisResult)
+	Analyse(ctx context.Context, stream retrieve.Result, result chan<- StaticAnalysisResult)
 }
 
 type StaticAnalysisResult struct {
-	mostLikelyCategories [5]string
+	MostLikelyCategories [5]string
 	SrcPort              uint16
 }
 type ChromaAnalyser struct {
@@ -31,7 +30,7 @@ func NewChromaAnalyser(ctx context.Context, params ...string) (*ChromaAnalyser, 
 	}
 
 	cli := chroma.NewClient(params[0])
-	var apiKey string = ""
+	apiKey := ""
 
 	if len(params) == 1 {
 		apiKey = os.Getenv("HF_API_KEY")
@@ -51,27 +50,18 @@ func NewChromaAnalyser(ctx context.Context, params ...string) (*ChromaAnalyser, 
 	return &ChromaAnalyser{client: cli, collection: coll}, nil
 }
 
-func (a *ChromaAnalyser) Analyse(ctx context.Context, queue <-chan retrieve.Result, result chan<- StaticAnalysisResult) {
-	for {
-		select {
-		case <-ctx.Done():
-			fmt.Println("Retriever: task stopped")
-			return
-		default:
-			stream := <-queue
-			qr, err := a.collection.Query(ctx, []string{stream.Stream}, 5, nil, nil, nil)
-			if err != nil {
-				ctx.Done()
-				return
-			}
-
-			var res StaticAnalysisResult
-			for i, id := range qr.Ids[0] {
-				res.mostLikelyCategories[i] = id
-				res.SrcPort = stream.SrcPort
-			}
-
-			result <- res
-		}
+func (a *ChromaAnalyser) Analyse(ctx context.Context, stream retrieve.Result, result chan<- StaticAnalysisResult) {
+	qr, err := a.collection.Query(ctx, []string{stream.Stream}, 5, nil, nil, nil)
+	if err != nil {
+		ctx.Done()
+		return
 	}
+
+	var res StaticAnalysisResult
+	for i, id := range qr.Ids[0] {
+		res.MostLikelyCategories[i] = id
+		res.SrcPort = stream.SrcPort
+	}
+
+	result <- res
 }

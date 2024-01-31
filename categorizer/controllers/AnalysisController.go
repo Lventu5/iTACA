@@ -4,6 +4,7 @@ import (
 	"categorizer/analysis"
 	"categorizer/retrieve"
 	"context"
+	"fmt"
 )
 
 type AnalysisController struct {
@@ -18,12 +19,17 @@ func NewAnalysisController(ctx context.Context, queue <-chan retrieve.Result, an
 }
 
 func (a *AnalysisController) Start(exit <-chan bool) {
-	go a.analyser.Analyse(a.ctx, a.queue, a.results)
-	select {
-	case <-exit:
-		a.ctx.Done()
-		return
-	case <-a.ctx.Done():
-		return
+	for {
+		select {
+		case <-exit:
+			fmt.Println("AnalysisController: task stopped")
+			a.ctx.Done()
+			return
+		case <-a.ctx.Done():
+			fmt.Println("RetrieverController: task stopped")
+			return
+		case stream := <-a.queue:
+			go a.analyser.Analyse(a.ctx, stream, a.results)
+		}
 	}
 }
