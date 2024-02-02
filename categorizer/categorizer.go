@@ -6,6 +6,7 @@ import (
 	"categorizer/retrieve"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strconv"
@@ -27,14 +28,13 @@ func main() {
 	}
 
 	if args[0] == "-h" {
-		fmt.Println("Usage: categorizer [-h] [-r] [-f] [args]")
-		fmt.Println("Options:\n-r: Select which source streams must be retrieved from: [Caronte, Tulip, pcap, file] (default Caronte)" +
-			"\n\t- Caronte: categorizer -r Caronte address port" +
-			"\n\t- Tulip: categorizer -r Tulip dbAddress dbPort" +
-			"\n\t- pcap: categorizer -r pcap /path/to/dir/containing/pcaps" +
-			"\n\t- file: categorizer -r file /path/to/dir/containing/files" +
-			"\n\t- default: categorizer [options] address port" +
+		fmt.Println("Usage: categorizer [-h] [-f] [-r Caronte|Tulip address port] [-a apiKey]")
+		fmt.Println("Options:\n-r: Select which source streams must be retrieved from: [Caronte, Tulip] (default Caronte)" +
+			"\n\t- Caronte: categorizer -r Caronte address port [-a apiKey]" +
+			"\n\t- Tulip: categorizer -r Tulip dbAddress dbPort [-a apiKey]" +
+			"\n\t- default: categorizer [-f] [-a apiKey] address port" +
 			"\n-f: Save results to a log file" +
+			"\n-a: Specify the API key as an argument rather than using an environment variable" +
 			"\n-h: Help")
 		return
 	}
@@ -45,6 +45,7 @@ func main() {
 	exit := make(chan bool)
 	var stc *controllers.StorageController
 	var rtc *controllers.RetrieverController
+	const CHROMASERVER = "http://localhost:8000"
 
 	if IndexOf(args, "-f") != -1 {
 		stc = controllers.NewStorageController(ctx, results)
@@ -53,7 +54,7 @@ func main() {
 	i := IndexOf(args, "-r")
 	if i == -1 {
 		if len(args) < 2 {
-			fmt.Println("Invalid arguments. Usage: categorizer [-h] [-f] [-r Caronte|Tulip|pcap|file args]")
+			fmt.Println("Invalid arguments. Usage: categorizer [-h] [-f] [-r Caronte|Tulip args]")
 			return
 		}
 
@@ -63,7 +64,7 @@ func main() {
 			return
 		}
 
-		if !match {
+		if !match && args[len(args)-2] != "localhost" {
 			fmt.Println("Invalid address")
 			return
 		}
@@ -75,10 +76,101 @@ func main() {
 		}
 
 		rtc = controllers.NewRetrieverController(ctx, queue, retrieve.NewCaronteRetriever(args[len(args)-2], uint16(port)))
+	} else {
+		if len(args) != i+4 {
+			fmt.Println("Invalid arguments. Usage: categorizer [-h] [-f] [-r Caronte|Tulip args]")
+			return
+		}
+		if args[i+1] == "Caronte" {
+			match, err := regexp.MatchString("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", args[i+2])
+			if err != nil {
+				fmt.Printf("Error checking address validity: %v", err)
+				return
+			}
+
+			if !match && args[i+2] != "localhost" {
+				fmt.Println("Invalid address")
+				return
+			}
+
+			port, err := strconv.ParseUint(args[i+3], 10, 32)
+			if err != nil {
+				fmt.Printf("Error parsing port: %v", err)
+				return
+			}
+
+			rtc = controllers.NewRetrieverController(ctx, queue, retrieve.NewCaronteRetriever(args[i+2], uint16(port)))
+		} else if args[i+1] == "Tulip" { // TODO: Implement TulipRetriever
+			/*match, err := regexp.MatchString("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", args[i+2])
+			if err != nil {
+				fmt.Printf("Error checking address validity: %v", err)
+				return
+			}
+
+			if !match && args[i+2] != "localhost" {
+				fmt.Println("Invalid address")
+				return
+			}
+
+			port, err := strconv.ParseUint(args[i+3], 10, 32)
+			if err != nil {
+				fmt.Printf("Error parsing port: %v", err)
+				return
+			}
+
+			rtc = controllers.NewRetrieverController(ctx, queue, retrieve.NewTulipRetriever(args[i+2], uint16(port)))*/
+			return
+		} else {
+			fmt.Println("Invalid retriever")
+			return
+		}
 	}
-	else {
-		if len(args) < i+3 {
-			fmt.Println("Invalid arguments. Usage: categorizer [-h] [-f] [-r Caronte|Tulip|pcap|file args]")
+
+	i = IndexOf(args, "-a")
+	if i != -1 {
+		if len(args) >= i+2 {
+			err := os.Setenv("HF_API_KEY", args[i+1])
+			if err != nil {
+				fmt.Printf("Error setting API key: %v", err)
+				return
+			}
+		} else {
+			fmt.Println("Invalid API key")
+			return
+		}
+	}
+
+	// Instantiate the ChromaAnalyser. The second parameter is the address of the Chroma server which must be running
+	chr, err := analysis.NewChromaAnalyser(ctx, CHROMASERVER)
+	if err != nil {
+		fmt.Printf("Error creating ChromaAnalyser: %v", err)
+		return
+	}
+
+	anc := controllers.NewAnalysisController(ctx, queue, chr)
+	log := controllers.NewLogger(ctx, results)
+
+	var stop string
+	fmt.Println("Enter ^D to stop")
+
+	go rtc.Start(exit)
+	go anc.Start(exit)
+	if stc != nil {
+		go stc.Start(exit)
+	}
+	go log.Start(exit)
+
+	for {
+		_, err := fmt.Scanln(&stop)
+		if err == io.EOF {
+			exit <- true
+		}
+
+		select {
+		case <-ctx.Done():
+			close(queue)
+			close(results)
+			close(exit)
 			return
 		}
 	}
