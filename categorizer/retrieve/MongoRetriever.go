@@ -1,12 +1,6 @@
 package retrieve
 
-import (
-	"categorizer/storage"
-	"context"
-	"fmt"
-	"os"
-)
-
+/*
 // MongoRetriever : implements Retriever for MongoDB, fetching reconstructed TCP streams from a MongoDB database
 // address must be the address of the machine which is hosting the database, port must be the port which exposes the database
 type MongoRetriever struct {
@@ -36,3 +30,4 @@ func (r *MongoRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 		}
 	}
 }
+*/

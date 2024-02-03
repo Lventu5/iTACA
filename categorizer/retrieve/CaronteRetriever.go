@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"slices"
@@ -16,6 +15,18 @@ import (
 type CaronteRetriever struct {
 	address string
 	port    uint16
+}
+
+// ResponseBody : represents the structure of the response body from the Caronte service
+type ResponseBody struct {
+	FromClient         bool   `json:"from_client"`
+	Content            string `json:"content"`
+	Metadata           string `json:"metadata"`
+	IsMetaContinuation bool   `json:"is_metadata_continuation"`
+	Index              int    `json:"index"`
+	Timestamp          string `json:"timestamp"`
+	IsRetransmitted    bool   `json:"is_retransmitted"`
+	//RegexMatches       []string `json:"regex_matches"`
 }
 
 func NewCaronteRetriever(address string, port uint16) *CaronteRetriever {
@@ -31,7 +42,7 @@ func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) 
 			fmt.Println("Retriever: task stopped")
 			return
 		default:
-			addr := fmt.Sprintf("%s:%d/api/connections?limit=50", r.address, r.port)
+			addr := fmt.Sprintf("http://%s:%d/api/connections?limit=50", r.address, r.port)
 			req, err := http.NewRequest(http.MethodGet, addr, nil)
 			if err != nil {
 				fmt.Printf("client: could not create request: %s\n", err)
@@ -73,7 +84,8 @@ func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) 
 				visited = append(visited, id)
 
 				// id is converted to hex because Caronte expects a hex string as id
-				req.URL.Path = fmt.Sprintf("/api/streams/%s/download?format=only_client", id.Hex())
+				req.URL.Path = fmt.Sprintf("http://%s:%d/api/streams/%s", r.address, r.port, id.Hex())
+				fmt.Println(req.URL.Path)
 
 				res, err = http.DefaultClient.Do(req)
 				if err != nil {
@@ -81,13 +93,20 @@ func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) 
 					os.Exit(1)
 				}
 
-				resBody, err := ioutil.ReadAll(res.Body)
+				var resBody []ResponseBody
+				err = json.NewDecoder(res.Body).Decode(&resBody)
 				if err != nil {
-					fmt.Printf("client: error reading response body: %s\n", err)
+					fmt.Printf("client: error decoding response body: %s\n", err)
 					os.Exit(1)
 				}
 
-				results <- Result{Stream: string(resBody), SrcPort: port}
+				reconstructedStream := ""
+				for _, v := range resBody {
+					// fmt.Printf(" Retrieved stream from port %d\n%s\n", port, v.Content)
+					reconstructedStream += v.Content
+				}
+
+				results <- Result{Stream: reconstructedStream, SrcPort: port}
 			}
 		}
 	}
