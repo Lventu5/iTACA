@@ -4,6 +4,7 @@ import (
 	"categorizer/retrieve"
 	"context"
 	"errors"
+	"fmt"
 	chroma "github.com/amikos-tech/chroma-go"
 	hf "github.com/amikos-tech/chroma-go/hf"
 	"os"
@@ -24,7 +25,7 @@ type ChromaAnalyser struct {
 }
 
 func NewChromaAnalyser(ctx context.Context, params ...string) (*ChromaAnalyser, error) {
-	if len(params) != 2 {
+	if len(params) < 1 || len(params) > 2 {
 		err := errors.New("invalid number of parameters")
 		return nil, err
 	}
@@ -53,6 +54,7 @@ func NewChromaAnalyser(ctx context.Context, params ...string) (*ChromaAnalyser, 
 func (a *ChromaAnalyser) Analyse(ctx context.Context, stream retrieve.Result, result chan<- StaticAnalysisResult) {
 	qr, err := a.collection.Query(ctx, []string{stream.Stream}, 5, nil, nil, nil)
 	if err != nil {
+		fmt.Printf("Error querying: %v\n", err)
 		ctx.Done()
 		return
 	}
@@ -64,4 +66,5 @@ func (a *ChromaAnalyser) Analyse(ctx context.Context, stream retrieve.Result, re
 	}
 
 	result <- res
+	return
 }
