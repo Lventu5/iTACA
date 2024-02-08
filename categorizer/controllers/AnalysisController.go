@@ -18,12 +18,12 @@ func NewAnalysisController(ctx context.Context, queue <-chan retrieve.Result, an
 	return &AnalysisController{ctx: ctx, queue: queue, analyser: analyser}
 }
 
-func (a *AnalysisController) Start(exit <-chan bool) {
+func (a *AnalysisController) Start(exit <-chan bool, cancel context.CancelFunc) {
 	for {
 		select {
 		case <-exit:
 			fmt.Println("AnalysisController: task stopped")
-			a.ctx.Done()
+			cancel()
 			return
 		case <-a.ctx.Done():
 			fmt.Println("RetrieverController: task stopped")

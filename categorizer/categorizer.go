@@ -39,16 +39,16 @@ func main() {
 		return
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	queue := make(chan retrieve.Result)
 	results := make(chan analysis.StaticAnalysisResult)
 	exit := make(chan bool)
-	var stc *controllers.StorageController
+	var ftc *controllers.FileController
 	var rtc *controllers.RetrieverController
 	const CHROMASERVER = "http://localhost:8000"
 
 	if IndexOf(args, "-f") != -1 {
-		stc = controllers.NewStorageController(ctx, results)
+		ftc = controllers.NewFileController(ctx, results)
 	}
 
 	i := IndexOf(args, "-r")
@@ -122,6 +122,7 @@ func main() {
 			return
 		} else {
 			fmt.Println("Invalid retriever")
+			cancel()
 			return
 		}
 	}
@@ -153,10 +154,10 @@ func main() {
 	var stop string
 	fmt.Println("Enter ^D to stop")
 
-	go rtc.Start(exit)
-	go anc.Start(exit)
-	if stc != nil {
-		go stc.Start(exit)
+	go rtc.Start(exit, cancel)
+	go anc.Start(exit, cancel)
+	if ftc != nil {
+		go ftc.Start(exit, cancel)
 	}
 	go log.Start(exit)
 

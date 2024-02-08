@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-type StorageController struct {
+type FileController struct {
 	ctx     context.Context
 	file    string
 	results <-chan analysis.StaticAnalysisResult
 }
 
-func NewStorageController(ctx context.Context, results <-chan analysis.StaticAnalysisResult) *StorageController {
-	return &StorageController{ctx: ctx, file: "categorizer.log", results: results}
+func NewFileController(ctx context.Context, results <-chan analysis.StaticAnalysisResult) *FileController {
+	return &FileController{ctx: ctx, file: "categorizer.log", results: results}
 }
 
-func (s *StorageController) Start(exit <-chan bool) {
+func (s *FileController) Start(exit <-chan bool, cancel context.CancelFunc) {
 	for {
 		file, err := os.OpenFile(s.file, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
@@ -27,14 +27,16 @@ func (s *StorageController) Start(exit <-chan bool) {
 
 		select {
 		case <-exit:
+			fmt.Println("FileController: task stopped")
 			err := file.Close()
 			if err != nil {
 				fmt.Printf("Error closing log file: %v", err)
 				return
 			}
-			s.ctx.Done()
+			cancel()
 			return
 		case <-s.ctx.Done():
+			fmt.Println("FileController: task stopped")
 			err := file.Close()
 			if err != nil {
 				fmt.Printf("Error closing log file: %v", err)
