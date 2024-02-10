@@ -1,0 +1,3 @@
+chroma-datasets==0.1.5
+chroma-hnswlib==0.7.3
+chromadb==0.4.14

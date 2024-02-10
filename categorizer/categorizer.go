@@ -1,4 +1,4 @@
-package categorizer
+package main
 
 import (
 	"categorizer/analysis"
