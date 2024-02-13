@@ -73,7 +73,7 @@ func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) 
 
 			var Ids = map[storage.RowID]uint16{}
 			for _, conn := range connections {
-				Ids[conn.ID] = conn.SourcePort
+				Ids[conn.ID] = conn.DestinationPort
 			}
 
 			for id, port := range Ids {
