@@ -1,6 +1,7 @@
 package retrieve
 
 import (
+	"bytes"
 	"categorizer/storage"
 	"context"
 	"encoding/json"
@@ -18,6 +19,11 @@ type TulipRetriever struct {
 	port    uint16
 }
 
+// NewTulipRetriever : creates a new instance of TulipRetriever
+func NewTulipRetriever(address string, port uint16) *TulipRetriever {
+	return &TulipRetriever{address: address, port: port}
+}
+
 // Retrieve : retrieves tcp streams from a TulipDB database
 func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 	var visited []primitive.ObjectID
@@ -27,8 +33,10 @@ func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 		case <-ctx.Done():
 			return
 		default:
-			addr := fmt.Sprintf("http://%s:%d/query", r.address, r.port)
-			req, err := http.NewRequest(http.MethodPost, addr, nil)
+			addr := fmt.Sprintf("http://%s:%d/api/query", r.address, r.port)
+			var data = []byte(`{}`)
+
+			req, err := http.NewRequest(http.MethodPost, addr, bytes.NewBuffer(data))
 			if err != nil {
 				fmt.Printf("client: could not create request: %s\n", err)
 				os.Exit(1)
@@ -49,16 +57,16 @@ func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 				os.Exit(1)
 			}
 
-			var flowEntries []storage.FlowEntry
-			err = json.NewDecoder(res.Body).Decode(&flowEntries)
+			var flows []storage.FlowEntry
+			err = json.NewDecoder(res.Body).Decode(&flows)
 			if err != nil {
 				fmt.Printf("client: error decoding response body: %s\n", err)
 				os.Exit(1)
 			}
 
-			var IDs map[primitive.ObjectID]uint16
-			for _, flow := range flowEntries {
-				IDs[flow.ID] = flow.Dst_Port
+			var IDs = map[primitive.ObjectID]uint16{}
+			for _, flow := range flows {
+				IDs[flow.Id] = uint16(flow.Dst_port)
 			}
 
 			for id, port := range IDs {
@@ -68,8 +76,9 @@ func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 
 				visited = append(visited, id)
 
-				req.URL.Path = fmt.Sprintf("http://%s:%d/flow/%v", r.address, r.port, id.Hex())
+				req.URL.Path = fmt.Sprintf("/api/flow/%v", id.Hex())
 				req.Method = http.MethodGet
+				req.ContentLength = 0
 
 				res, err = http.DefaultClient.Do(req)
 				if err != nil {
@@ -77,23 +86,24 @@ func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 					os.Exit(1)
 				}
 
-				var flows []storage.FlowEntry
-				err = json.NewDecoder(res.Body).Decode(&flows)
+				var singleFlow storage.FlowEntry
+				err = json.NewDecoder(res.Body).Decode(&singleFlow)
 				if err != nil {
 					fmt.Printf("client: error decoding response body: %s\n", err)
 					os.Exit(1)
 				}
 
-				for _, flow := range flows {
+				reconstructedStream := ""
 
-					reconstructedStream := ""
-					for _, v := range flow.Flow {
-						// fmt.Printf(" Retrieved stream from port %d\n%s\n", port, v.Content)
-						reconstructedStream += v.Data
+				for _, flow := range singleFlow.Flow {
+					if flow.From == "s" {
+						continue
 					}
-
-					results <- Result{Stream: reconstructedStream, SrcPort: uint16(port)}
+					// fmt.Printf(" Retrieved stream from port %d\n%s\n", port, v.Content)
+					reconstructedStream += flow.Data
 				}
+
+				results <- Result{Stream: reconstructedStream, SrcPort: uint16(port)}
 			}
 		}
 	}

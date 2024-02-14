@@ -2,44 +2,37 @@ package storage
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type FlowItem struct {
-	/// From: "s" / "c" for server or client
-	From string
-	/// Data, in a somewhat readable format
-	Data string
-	/// The raw data, base64 encoded.
-	B64 string
-	/// Timestamp of the first packet in the flow (Epoch / ms)
-	Time int
-}
-
-/*type FlowEntry struct {
-	Src_port     int
-	Dst_port     int
-	Src_ip       string
-	Dst_ip       string
-	Time         int
-	Duration     int
-	Num_packets  int
-	Blocked      bool
-	Filename     string
-	Parent_id    primitive.ObjectID
-	Child_id     primitive.ObjectID
-	Fingerprints []uint32
-	Suricata     []int
-	Flow         []FlowItem
-	Tags         []string
-	Size         int
+/*type Identifier struct {
+	Id string `json:"$oid" bson:"$oid"`
 }*/
 
+type FlowItem struct {
+	/// From: "s" / "c" for server or client
+	From string `json:"from" bson:"from"`
+	/// Data, in a somewhat readable format
+	Data string `json:"data" bson:"data"`
+	/// The raw data, base64 encoded.
+	B64 string `json:"b64" bson:"b64"`
+	/// Timestamp of the first packet in the flow (Epoch / ms)
+	Time int `json:"time" bson:"time"`
+}
+
 type FlowEntry struct {
-	ID           primitive.ObjectID `json:"_id" bson:"_id"`
+	Id           primitive.ObjectID `json:"_id" bson:"_id"`
+	Src_port     int                `json:"src_port" bson:"src_port"`
+	Dst_port     int                `json:"dst_port" bson:"dst_port"`
+	Src_ip       string             `json:"src_ip" bson:"src_ip"`
+	Dst_ip       string             `json:"dst_ip" bson:"dst_ip"`
 	Time         int                `json:"time" bson:"time"`
 	Duration     int                `json:"duration" bson:"duration"`
-	Src_IP       string             `json:"src_ip" bson:"src_ip"`
-	Dst_IP       string             `json:"dst_ip" bson:"ip_dst"`
-	Src_Port     uint16             `json:"src_port" bson:"src_port"`
-	Dst_Port     uint16             `json:"dst_port" bson:"dst_port"`
-	ContainsFlag bool               `json:"contains_flag" bson:"contains_flag"`
+	Num_packets  int                `json:"num_packets" bson:"num_packets"`
+	Blocked      bool               `json:"blocked" bson:"blocked"`
+	Filename     string             `json:"filename" bson:"filename"`
+	Parent_id    primitive.ObjectID `json:"parent_id" bson:"parent_id"`
+	Child_id     primitive.ObjectID `json:"child_id" bson:"child_id"`
+	Fingerprints []uint32           `json:"fingerprints" bson:"fingerprints"`
+	Suricata     []int              `json:"suricata" bson:"suricata"`
 	Flow         []FlowItem         `json:"flow" bson:"flow"`
+	Tags         []string           `json:"tags" bson:"tags"`
+	Size         int                `json:"size" bson:"size"`
 }
