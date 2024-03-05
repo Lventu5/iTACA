@@ -9,12 +9,13 @@ import (
 
 func TestStaticAnalyser(t *testing.T) {
 	ctx := context.Background()
-	address := "http://localhost:8000"
+	address := "localhost"
+	port := uint16(8000)
 	results := make(chan analysis.StaticAnalysisResult)
 
 	//fmt.Printf("%s\n", os.Getenv("HF_API_KEY"))
 
-	analyser, err := analysis.NewChromaAnalyser(ctx, address)
+	analyser, err := analysis.NewChromaAnalyser(ctx, address, port, "payloads", "API_KEY")
 	if err != nil {
 		t.Errorf("Error creating analyser: %v", err)
 	}

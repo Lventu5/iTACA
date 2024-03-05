@@ -1,12 +1,8 @@
 package storage
 
 import (
-	"context"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -46,77 +42,14 @@ type Connection struct {
 	Service         Service   `json:"service" bson:"-"`
 }
 
-const (
-	Connections       = "connections"
-	ConnectionStreams = "connection_streams"
-	ImportingSessions = "importing_sessions"
-	Rules             = "rules"
-	Searches          = "searches"
-	Settings          = "settings"
-	Services          = "services"
-	Statistics        = "statistics"
-)
-
-// Storage : interface, defines the general methods to interact with the database
-type Storage interface {
-	Insert(collectionName string) InsertOperation
-	Update(collectionName string) UpdateOperation
-	Find(collectionName string) FindOperation
-	Delete(collectionName string) DeleteOperation
-}
-
-// MongoStorage : implements Storage for MongoDB, it is used to interact with the database
-type MongoStorage struct {
-	client      *mongo.Client
-	collections map[string]*mongo.Collection
-}
-
-// NewMongoStorage : creates a new MongoStorage instance
-func NewMongoStorage(uri string, port int, database string) (*MongoStorage, error) {
-	ctx := context.Background()
-	opt := options.Client()
-	opt.ApplyURI(fmt.Sprintf("mongodb://%s:%v", uri, port))
-	client, err := mongo.NewClient(opt)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := client.Connect(ctx); err != nil {
-		return nil, err
-	}
-
-	db := client.Database(database)
-	collections := map[string]*mongo.Collection{
-		Connections:       db.Collection(Connections),
-		ConnectionStreams: db.Collection(ConnectionStreams),
-		ImportingSessions: db.Collection(ImportingSessions),
-		Rules:             db.Collection(Rules),
-		Searches:          db.Collection(Searches),
-		Settings:          db.Collection(Settings),
-		Services:          db.Collection(Services),
-		Statistics:        db.Collection(Statistics),
-	}
-
-	if _, err := collections[Services].Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{"name", 1}},
-		Options: options.Index().SetUnique(true),
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err := collections[ConnectionStreams].Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{
-			Keys: bson.D{{"connection_id", -1}}, // descending
-		},
-		{
-			Keys: bson.D{{"payload_string", "text"}},
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return &MongoStorage{
-		client:      client,
-		collections: collections,
-	}, nil
+// ResponseBody : represents the structure of the response body from the Caronte service
+type ResponseBody struct {
+	FromClient         bool   `json:"from_client"`
+	Content            string `json:"content"`
+	Metadata           string `json:"metadata"`
+	IsMetaContinuation bool   `json:"is_metadata_continuation"`
+	Index              int    `json:"index"`
+	Timestamp          string `json:"timestamp"`
+	IsRetransmitted    bool   `json:"is_retransmitted"`
+	//RegexMatches       []string `json:"regex_matches"`
 }

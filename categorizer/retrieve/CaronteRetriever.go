@@ -17,18 +17,6 @@ type CaronteRetriever struct {
 	port    uint16
 }
 
-// ResponseBody : represents the structure of the response body from the Caronte service
-type ResponseBody struct {
-	FromClient         bool   `json:"from_client"`
-	Content            string `json:"content"`
-	Metadata           string `json:"metadata"`
-	IsMetaContinuation bool   `json:"is_metadata_continuation"`
-	Index              int    `json:"index"`
-	Timestamp          string `json:"timestamp"`
-	IsRetransmitted    bool   `json:"is_retransmitted"`
-	//RegexMatches       []string `json:"regex_matches"`
-}
-
 func NewCaronteRetriever(address string, port uint16) *CaronteRetriever {
 	return &CaronteRetriever{address: address, port: port}
 }
@@ -93,7 +81,7 @@ func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) 
 					os.Exit(1)
 				}
 
-				var resBody []ResponseBody
+				var resBody []storage.ResponseBody
 				err = json.NewDecoder(res.Body).Decode(&resBody)
 				if err != nil {
 					fmt.Printf("client: error decoding response body: %s\n", err)

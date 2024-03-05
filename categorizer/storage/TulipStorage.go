@@ -2,10 +2,6 @@ package storage
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-/*type Identifier struct {
-	Id string `json:"$oid" bson:"$oid"`
-}*/
-
 type FlowItem struct {
 	/// From: "s" / "c" for server or client
 	From string `json:"from" bson:"from"`

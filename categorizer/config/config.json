@@ -1,0 +1,17 @@
+{
+  "configs": {
+    "retriever": {
+      "type": "Caronte",
+      "host": "localhost",
+      "port": 3333
+    },
+    "analyzer": {
+      "type": "ChromaDB",
+      "host": "localhost",
+      "port": 8000,
+      "collection": "payloads",
+      "apiKey": ""
+    },
+    "log": true
+  }
+}
