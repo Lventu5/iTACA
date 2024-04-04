@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-	"os"
 	"slices"
 )
 
@@ -25,7 +24,7 @@ func NewTulipRetriever(address string, port uint16) *TulipRetriever {
 }
 
 // Retrieve : retrieves tcp streams from a TulipDB database
-func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
+func (r *TulipRetriever) Retrieve(ctx context.Context, cancel context.CancelFunc, results chan<- Result) {
 	var visited []primitive.ObjectID
 
 	for {
@@ -39,7 +38,8 @@ func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 			req, err := http.NewRequest(http.MethodPost, addr, bytes.NewBuffer(data))
 			if err != nil {
 				fmt.Printf("client: could not create request: %s\n", err)
-				os.Exit(1)
+				cancel()
+				return
 			}
 
 			req.Header.Add("Accept", "*/*")
@@ -54,14 +54,15 @@ func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
 				fmt.Printf("client: error making http request: %s\n", err)
-				os.Exit(1)
+				cancel()
+				return
 			}
 
 			var flows []storage.FlowEntry
 			err = json.NewDecoder(res.Body).Decode(&flows)
 			if err != nil {
 				fmt.Printf("client: error decoding response body: %s\n", err)
-				os.Exit(1)
+				continue
 			}
 
 			var IDs = map[primitive.ObjectID]uint16{}
@@ -83,14 +84,15 @@ func (r *TulipRetriever) Retrieve(ctx context.Context, results chan<- Result) {
 				res, err = http.DefaultClient.Do(req)
 				if err != nil {
 					fmt.Printf("client: error making http request: %s\n", err)
-					os.Exit(1)
+					cancel()
+					return
 				}
 
 				var singleFlow storage.FlowEntry
 				err = json.NewDecoder(res.Body).Decode(&singleFlow)
 				if err != nil {
 					fmt.Printf("client: error decoding response body: %s\n", err)
-					os.Exit(1)
+					continue
 				}
 
 				reconstructedStream := ""

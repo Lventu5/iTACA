@@ -2,17 +2,18 @@ package tests
 
 import (
 	"categorizer/analysis"
-	"categorizer/controllers"
+	"categorizer/logging"
 	"context"
 	"testing"
 )
 
 func TestFileController(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	results := make(chan analysis.StaticAnalysisResult)
+	ctx := context.Background()
 
-	flc := controllers.NewFileController(ctx, results)
-	exit := make(chan bool)
+	flc, err := logging.NewFileLogger(ctx)
+	if err != nil {
+		t.Errorf("Error creating FileLogger")
+	}
 
 	var test [5]analysis.StaticAnalysisResult
 	test[0] = analysis.StaticAnalysisResult{MostLikelyCategories: [5]string{"a", "b", "c", "d", "e"}, SrcPort: 9999}
@@ -21,16 +22,9 @@ func TestFileController(t *testing.T) {
 	test[3] = analysis.StaticAnalysisResult{MostLikelyCategories: [5]string{"PRV", "PRV", "PRV", "PRV", "PRV"}, SrcPort: 2222}
 	test[4] = analysis.StaticAnalysisResult{MostLikelyCategories: [5]string{"CRYPTO", "CRYPTO", "CRYPTO", "CRYPTO", "CRYPTO"}, SrcPort: 10456}
 
-	go flc.Start(exit, cancel)
 	for _, res := range test {
-		results <- res
+		flc.Log(res)
 	}
-	exit <- true
 
-	select {
-	case <-ctx.Done():
-		close(results)
-		close(exit)
-		return
-	}
+	flc.Close()
 }

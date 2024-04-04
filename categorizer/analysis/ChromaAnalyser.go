@@ -27,11 +27,11 @@ func NewChromaAnalyser(ctx context.Context, address string, port uint16, collect
 	return &ChromaAnalyser{client: cli, collection: coll}, nil
 }
 
-func (a *ChromaAnalyser) Analyse(ctx context.Context, stream retrieve.Result, result chan<- StaticAnalysisResult) {
+func (a *ChromaAnalyser) Analyse(ctx context.Context, cancel context.CancelFunc, stream retrieve.Result, result chan<- StaticAnalysisResult) {
 	qr, err := a.collection.Query(ctx, []string{stream.Stream}, 5, nil, nil, nil)
 	if err != nil {
 		fmt.Printf("Error querying: %v\n", err)
-		ctx.Done()
+		cancel()
 		return
 	}
 

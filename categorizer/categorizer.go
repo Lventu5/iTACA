@@ -30,7 +30,6 @@ func main() {
 	queue := make(chan retrieve.Result)
 	results := make(chan analysis.StaticAnalysisResult)
 	exit := make(chan bool)
-	var ftc *controllers.FileController
 	var rtc *controllers.RetrieverController
 
 	// Parse the config file
@@ -50,22 +49,19 @@ func main() {
 		rtc = controllers.NewRetrieverController(ctx, queue, retrieve.NewCaronteRetriever(cfg.Retriever.Address, cfg.Retriever.Port))
 	}
 
+	otc := controllers.NewOutputController(ctx, results, cfg.Log)
+
 	// Instantiate the ChromaAnalyser
 	chr, err := analysis.NewChromaAnalyser(ctx, cfg.Analyser.Address, cfg.Analyser.Port, cfg.Analyser.Collection, cfg.Analyser.ApiKey)
 
 	anc := controllers.NewAnalysisController(ctx, queue, chr)
-	log := controllers.NewLogger(ctx, results)
 
 	var stop string
 	fmt.Println("Enter ^D to stop")
 
 	go rtc.Start(exit, cancel)
 	go anc.Start(exit, cancel)
-	if cfg.Log {
-		ftc = controllers.NewFileController(ctx, results)
-		go ftc.Start(exit, cancel)
-	}
-	go log.Start(exit)
+	go otc.Start(exit, cancel)
 
 	for {
 		_, err := fmt.Scanln(&stop)

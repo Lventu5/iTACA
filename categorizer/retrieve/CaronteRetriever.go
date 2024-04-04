@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"slices"
 )
 
@@ -21,20 +20,22 @@ func NewCaronteRetriever(address string, port uint16) *CaronteRetriever {
 	return &CaronteRetriever{address: address, port: port}
 }
 
-func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) {
+func (r *CaronteRetriever) Retrieve(ctx context.Context, cancel context.CancelFunc, results chan<- Result) {
 	var visited []storage.RowID
 
 	for {
 		select {
 		case <-ctx.Done():
 			fmt.Println("Retriever: task stopped")
+			cancel()
 			return
 		default:
 			addr := fmt.Sprintf("http://%s:%d/api/connections?limit=50", r.address, r.port)
 			req, err := http.NewRequest(http.MethodGet, addr, nil)
 			if err != nil {
 				fmt.Printf("client: could not create request: %s\n", err)
-				os.Exit(1)
+				cancel()
+				return
 			}
 
 			req.Header.Add("Accept", "*/*")
@@ -49,14 +50,15 @@ func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) 
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
 				fmt.Printf("client: error making http request: %s\n", err)
-				os.Exit(1)
+				cancel()
+				return
 			}
 
 			var connections []storage.Connection
 			err = json.NewDecoder(res.Body).Decode(&connections)
 			if err != nil {
 				fmt.Printf("client: error decoding response body: %s\n", err)
-				os.Exit(1)
+				continue
 			}
 
 			var Ids = map[storage.RowID]uint16{}
@@ -78,14 +80,15 @@ func (r *CaronteRetriever) Retrieve(ctx context.Context, results chan<- Result) 
 				res, err = http.DefaultClient.Do(req)
 				if err != nil {
 					fmt.Printf("client: error making http request: %s\n", err)
-					os.Exit(1)
+					cancel()
+					return
 				}
 
 				var resBody []storage.ResponseBody
 				err = json.NewDecoder(res.Body).Decode(&resBody)
 				if err != nil {
 					fmt.Printf("client: error decoding response body: %s\n", err)
-					os.Exit(1)
+					continue
 				}
 
 				reconstructedStream := ""

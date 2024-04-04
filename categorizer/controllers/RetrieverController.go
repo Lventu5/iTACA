@@ -17,7 +17,7 @@ func NewRetrieverController(ctx context.Context, queue chan<- retrieve.Result, r
 }
 
 func (c *RetrieverController) Start(exit <-chan bool, cancel context.CancelFunc) {
-	go c.retriever.Retrieve(c.ctx, c.queue)
+	go c.retriever.Retrieve(c.ctx, cancel, c.queue)
 	select {
 	case <-exit:
 		fmt.Println("RetrieverController: task stopped")
