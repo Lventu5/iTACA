@@ -5,6 +5,7 @@ import (
 	"categorizer/retrieve"
 	"context"
 	"fmt"
+	"strings"
 )
 
 type AnalysisController struct {
@@ -29,7 +30,11 @@ func (a *AnalysisController) Start(exit <-chan bool, cancel context.CancelFunc) 
 			fmt.Println("RetrieverController: task stopped")
 			return
 		case stream := <-a.queue:
-			go a.analyser.Analyse(a.ctx, stream, a.results)
+			streams := strings.Split(stream.Stream, "\n")
+			for _, s := range streams {
+				newStream := retrieve.Result{Stream: s, SrcPort: stream.SrcPort}
+				go a.analyser.Analyse(a.ctx, cancel, newStream, a.results)
+			}
 		}
 	}
 }

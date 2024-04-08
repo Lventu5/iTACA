@@ -1,17 +1,16 @@
+
 {
-  "configs": {
     "retriever": {
-      "type": "Caronte",
+      "type": "Tulip",
       "host": "localhost",
-      "port": 3333
+      "port": 3000
     },
-    "analyzer": {
+    "analyser": {
       "type": "ChromaDB",
       "host": "localhost",
       "port": 8000,
       "collection": "payloads",
-      "apiKey": ""
+      "apiKey": "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"
     },
     "log": true
-  }
 }

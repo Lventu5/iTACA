@@ -7,17 +7,17 @@ import (
 )
 
 type RetrieverConfig struct {
-	Type    string `json:"type"`
-	Address string `json:"address"`
-	Port    uint16 `json:"port"`
+	Type string `json:"type"`
+	Host string `json:"host"`
+	Port uint16 `json:"port"`
 }
 
 type AnalyserConfig struct {
 	Type       string `json:"type"`
-	Address    string `json:"address"`
+	Host       string `json:"host"`
 	Port       uint16 `json:"port"`
 	Collection string `json:"collection"`
-	ApiKey     string `json:"api_key"`
+	ApiKey     string `json:"apiKey"`
 }
 
 type Config struct {
