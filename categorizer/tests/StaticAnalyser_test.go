@@ -17,7 +17,7 @@ func TestStaticAnalyser(t *testing.T) {
 
 	//fmt.Printf("%s\n", os.Getenv("HF_API_KEY"))
 
-	analyser, err := analysis.NewChromaAnalyser(ctx, address, port, "payloads", "API_KEY_HERE")
+	analyser, err := analysis.NewChromaAnalyser(ctx, address, port, "payloads", "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")
 	if err != nil {
 		t.Errorf("Error creating analyser: %v", err)
 	}

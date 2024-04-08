@@ -27,7 +27,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	queue := make(chan retrieve.Result)
-	results := make(chan analysis.StaticAnalysisResult)
+	results := make(chan analysis.StaticAnalysisResult, 10)
 	exit := make(chan bool)
 	var rtc *controllers.RetrieverController
 

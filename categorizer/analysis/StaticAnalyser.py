@@ -19,7 +19,8 @@ def main():
         else:
             res.append('safe')
 
-    print(res)
+    if res.count('safe') != 5:
+        print(res)
 
 if __name__ == '__main__':
     main()
