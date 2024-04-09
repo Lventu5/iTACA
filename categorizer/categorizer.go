@@ -27,7 +27,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	queue := make(chan retrieve.Result)
-	results := make(chan analysis.StaticAnalysisResult, 10)
+	results := make(chan analysis.StaticAnalysisResult, 5)
 	exit := make(chan bool)
 	var rtc *controllers.RetrieverController
 
@@ -53,7 +53,7 @@ func main() {
 	// Instantiate the ChromaAnalyser
 	chr, err := analysis.NewChromaAnalyser(ctx, cfg.Analyser.Host, cfg.Analyser.Port, cfg.Analyser.Collection, cfg.Analyser.ApiKey)
 
-	anc := controllers.NewAnalysisController(ctx, queue, chr)
+	anc := controllers.NewAnalysisController(ctx, queue, results, chr)
 
 	var stop string
 	fmt.Println("Enter ^D to stop")

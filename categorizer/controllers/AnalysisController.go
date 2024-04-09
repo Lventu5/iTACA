@@ -15,11 +15,12 @@ type AnalysisController struct {
 	analyser analysis.StaticAnalyser
 }
 
-func NewAnalysisController(ctx context.Context, queue <-chan retrieve.Result, analyser analysis.StaticAnalyser) *AnalysisController {
-	return &AnalysisController{ctx: ctx, queue: queue, analyser: analyser}
+func NewAnalysisController(ctx context.Context, queue <-chan retrieve.Result, results chan<- analysis.StaticAnalysisResult, analyser analysis.StaticAnalyser) *AnalysisController {
+	return &AnalysisController{ctx: ctx, queue: queue, results: results, analyser: analyser}
 }
 
 func (a *AnalysisController) Start(exit <-chan bool, cancel context.CancelFunc) {
+	ctrl := make(chan bool, 1)
 	for {
 		select {
 		case <-exit:
@@ -33,7 +34,7 @@ func (a *AnalysisController) Start(exit <-chan bool, cancel context.CancelFunc) 
 			streams := strings.Split(stream.Stream, "\n")
 			for _, s := range streams {
 				newStream := retrieve.Result{Stream: s, SrcPort: stream.SrcPort}
-				go a.analyser.Analyse(a.ctx, cancel, newStream, a.results)
+				go a.analyser.Analyse( /*a.ctx, cancel, */ newStream, a.results, ctrl)
 			}
 		}
 	}
