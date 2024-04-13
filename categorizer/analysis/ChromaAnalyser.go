@@ -2,14 +2,13 @@ package analysis
 
 import (
 	"categorizer/retrieve"
-	"context"
 	"fmt"
-	"github.com/amikos-tech/chroma-go"
-	"github.com/amikos-tech/chroma-go/hf"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
+/*	IN CASE CHROMA-GO GETS FIXED
 type ChromaAnalyser struct {
 	client     *chroma.Client
 	collection *chroma.Collection
@@ -28,10 +27,28 @@ func NewChromaAnalyser(ctx context.Context, address string, port uint16, collect
 
 	return &ChromaAnalyser{client: cli, collection: coll}, nil
 }
+*/
 
-func (a *ChromaAnalyser) Analyse( /*ctx context.Context, cancel context.CancelFunc, */ stream retrieve.Result, result chan<- StaticAnalysisResult, ctrl chan bool) {
-	ctrl <- true
-	/*qr, err := a.collection.Query(ctx, []string{stream.Stream}, 5, nil, nil, nil)
+type ChromaAnalyser struct {
+	address    string
+	port       uint16
+	collection string
+}
+
+func NewChromaAnalyser(address string, port uint16, collection string) (*ChromaAnalyser, error) {
+	r, err := regexp.Compile(`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`)
+	if err != nil {
+		return nil, err
+	}
+	if address != "localhost" && !r.MatchString(address) {
+		return nil, fmt.Errorf("Invalid address")
+	}
+	return &ChromaAnalyser{address: address, port: port, collection: collection}, nil
+}
+
+func (a *ChromaAnalyser) Analyse(stream retrieve.Result, result chan<- StaticAnalysisResult) {
+	/* IN CASE CHROMA-GO GETS FIXED
+	qr, err := a.collection.Query(ctx, []string{stream.Stream}, 5, nil, nil, nil)
 	if err != nil {
 		fmt.Printf("Error querying: %v\n", err)
 		cancel()
@@ -49,7 +66,7 @@ func (a *ChromaAnalyser) Analyse( /*ctx context.Context, cancel context.CancelFu
 
 	var res StaticAnalysisResult
 
-	cmd := exec.Command("analysis/StaticAnalyser.py", stream.Stream)
+	cmd := exec.Command("../analysis/QueryHandler.py", a.address, fmt.Sprintf("%d", a.port), a.collection, stream.Stream)
 	qrRes, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("Error executing command: %v", err)
@@ -57,7 +74,6 @@ func (a *ChromaAnalyser) Analyse( /*ctx context.Context, cancel context.CancelFu
 	}
 	strRes := strings.TrimSpace(string(qrRes))
 	if strRes == "" {
-		<-ctrl
 		return
 	}
 
@@ -69,6 +85,5 @@ func (a *ChromaAnalyser) Analyse( /*ctx context.Context, cancel context.CancelFu
 	res.SrcPort = stream.SrcPort
 
 	result <- res
-	<-ctrl
 	return
 }

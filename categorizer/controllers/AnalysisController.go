@@ -20,7 +20,7 @@ func NewAnalysisController(ctx context.Context, queue <-chan retrieve.Result, re
 }
 
 func (a *AnalysisController) Start(exit <-chan bool, cancel context.CancelFunc) {
-	ctrl := make(chan bool, 1)
+	//ctrl := make(chan bool, 1)
 	for {
 		select {
 		case <-exit:
@@ -34,7 +34,7 @@ func (a *AnalysisController) Start(exit <-chan bool, cancel context.CancelFunc) 
 			streams := strings.Split(stream.Stream, "\n")
 			for _, s := range streams {
 				newStream := retrieve.Result{Stream: s, SrcPort: stream.SrcPort}
-				go a.analyser.Analyse( /*a.ctx, cancel, */ newStream, a.results, ctrl)
+				go a.analyser.Analyse( /*a.ctx, cancel, */ newStream, a.results)
 			}
 		}
 	}
