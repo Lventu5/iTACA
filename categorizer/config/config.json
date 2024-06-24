@@ -9,8 +9,7 @@
       "type": "ChromaDB",
       "host": "localhost",
       "port": 8000,
-      "collection": "payloads",
-      "apiKey": "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"
+      "collection": "payloads"
     },
     "log": true
 }

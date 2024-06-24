@@ -2,33 +2,41 @@ package analysis
 
 import (
 	"categorizer/retrieve"
+	"context"
 	"fmt"
-	"os/exec"
-	"regexp"
-	"strings"
+	chroma "github.com/amikos-tech/chroma-go"
+	ollama "github.com/amikos-tech/chroma-go/ollama"
+	"time"
 )
 
-/*	IN CASE CHROMA-GO GETS FIXED
 type ChromaAnalyser struct {
 	client     *chroma.Client
 	collection *chroma.Collection
 }
 
-func NewChromaAnalyser(ctx context.Context, address string, port uint16, collection string, apiKey string) (*ChromaAnalyser, error) {
+func NewChromaAnalyser(ctx context.Context, address string, port uint16, collection string) (*ChromaAnalyser, error) {
 
 	finalAddress := fmt.Sprintf("http://%s:%d", address, port)
 
-	cli := chroma.NewClient(finalAddress)
+	cli, err := chroma.NewClient(finalAddress)
+	if err != nil {
+		return nil, err
+	}
 
-	coll, err := cli.GetCollection(ctx, collection, hf.NewHuggingFaceEmbeddingFunction(apiKey, "sentence-transformers/all-MiniLM-L6-v2"))
+	ef, err := ollama.NewOllamaEmbeddingFunction()
+	if err != nil {
+		return nil, err
+	}
+
+	coll, err := cli.GetCollection(ctx, collection, ef)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ChromaAnalyser{client: cli, collection: coll}, nil
 }
-*/
 
+/* IN CASE OLLAMA OR CHROMA-GO DO NOT WORK PROPERLY
 type ChromaAnalyser struct {
 	address    string
 	port       uint16
@@ -44,10 +52,11 @@ func NewChromaAnalyser(address string, port uint16, collection string) (*ChromaA
 		return nil, fmt.Errorf("Invalid address")
 	}
 	return &ChromaAnalyser{address: address, port: port, collection: collection}, nil
-}
+}*/
 
 func (a *ChromaAnalyser) Analyse(stream retrieve.Result, result chan<- StaticAnalysisResult) {
-	/* IN CASE CHROMA-GO GETS FIXED
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	qr, err := a.collection.Query(ctx, []string{stream.Stream}, 5, nil, nil, nil)
 	if err != nil {
 		fmt.Printf("Error querying: %v\n", err)
@@ -62,8 +71,9 @@ func (a *ChromaAnalyser) Analyse(stream retrieve.Result, result chan<- StaticAna
 		}
 		res.MostLikelyCategories[i] = id
 		res.SrcPort = stream.SrcPort
-	}*/
+	}
 
+	/* IN CASE OLLAMA OR CHROMA-GO DO NOT WORK PROPERLY
 	var res StaticAnalysisResult
 
 	cmd := exec.Command("../analysis/QueryHandler.py", a.address, fmt.Sprintf("%d", a.port), a.collection, stream.Stream)
@@ -82,8 +92,9 @@ func (a *ChromaAnalyser) Analyse(stream retrieve.Result, result chan<- StaticAna
 	strRes = strings.ReplaceAll(strRes, "]", "")
 
 	res.MostLikelyCategories = [5]string(strings.Split(strRes, ", "))
-	res.SrcPort = stream.SrcPort
+	res.SrcPort = stream.SrcPort*/
 
 	result <- res
+	cancel()
 	return
 }
