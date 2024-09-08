@@ -23,7 +23,7 @@ func NewChromaAnalyser(ctx context.Context, address string, port uint16, collect
 		return nil, err
 	}
 
-	ef, err := ollama.NewOllamaEmbeddingFunction()
+	ef, err := ollama.NewOllamaEmbeddingFunction(ollama.WithBaseURL("http://127.0.0.1:11434"), ollama.WithModel("mxbai-embed-text"))
 	if err != nil {
 		return nil, err
 	}
